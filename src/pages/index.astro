@@ -1,0 +1,20 @@
+---
+import Base from '../layouts/Base.astro';
+import Stream from '../components/Stream.astro';
+import { allEntries } from '../lib/entries';
+import { SITE } from '../site';
+
+const entries = await allEntries();
+const page = entries.slice(0, SITE.pageSize);
+const hasMore = entries.length > SITE.pageSize;
+---
+
+<Base section="stream">
+  <Stream entries={page} />
+  {hasMore && (
+    <nav class="pager" aria-label="Pages">
+      <span />
+      <a href="/page/2">Earlier</a>
+    </nav>
+  )}
+</Base>

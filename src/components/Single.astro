@@ -1,0 +1,45 @@
+---
+import Base from '../layouts/Base.astro';
+import DayMark from './DayMark.astro';
+import Entry from './Entry.astro';
+import { permalink, title, type Entry as EntryT } from '../lib/entries';
+import { resolvePhoto } from '../lib/media';
+import { getImage } from 'astro:assets';
+
+interface Props {
+  item: EntryT;
+  prev?: EntryT;
+  next?: EntryT;
+}
+const { item, prev, next } = Astro.props;
+const { entry } = item;
+
+let ogImage: string | undefined;
+if (item.kind === 'photo') {
+  const meta = resolvePhoto(item.entry.data.image);
+  if (meta) ogImage = (await getImage({ src: meta, width: 1200, format: 'jpeg' })).src;
+}
+const description =
+  item.kind === 'post'
+    ? item.entry.data.description
+    : (entry.body ?? '').replace(/\s+/g, ' ').trim().slice(0, 160) || undefined;
+const section = item.kind === 'photo' ? 'photos' : 'stream';
+---
+
+<Base title={title(item)} description={description} image={ogImage} section={section}>
+  <article class="single">
+    <DayMark date={entry.data.date} />
+    <div class="single-body">
+      <Entry item={item} context="single" />
+      {item.kind === 'post' && (
+        <div class="prose post-body" lang={entry.data.lang}>
+          <slot />
+        </div>
+      )}
+    </div>
+  </article>
+  <nav class="pager" aria-label="Neighbours">
+    {next ? <a href={permalink(next)}>Later: {title(next)}</a> : <span />}
+    {prev ? <a href={permalink(prev)}>Earlier: {title(prev)}</a> : <span />}
+  </nav>
+</Base>

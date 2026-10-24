@@ -1,0 +1,43 @@
+---
+import Base from '../layouts/Base.astro';
+import { allEntries, allTags, groupByMonth, permalink, title } from '../lib/entries';
+import { dayNumber } from '../lib/dates';
+
+const entries = await allEntries();
+const months = groupByMonth(entries);
+const tags = allTags(entries);
+---
+
+<Base title="Archive" section="archive" description="Everything, by month.">
+  <h1 class="page-title">Archive</h1>
+  <p class="page-intro">
+    {entries.length} entries since {months.at(-1)?.label ?? 'the beginning'}.
+  </p>
+
+  {tags.length > 0 && (
+    <div class="chips" style="margin-bottom: 2.5rem">
+      {tags.map((t) => (
+        <a class="chip" href={`/tags/${t.tag}`}>
+          #{t.tag}
+          <small>{t.count}</small>
+        </a>
+      ))}
+    </div>
+  )}
+
+  {months.map((m) => (
+    <section class="month" id={m.key}>
+      <h2>{m.label}</h2>
+      <ul>
+        {m.entries.map((e) => (
+          <li>
+            <time datetime={e.entry.data.date.toISOString()}>{dayNumber(e.entry.data.date)}</time>
+            <a href={permalink(e)} lang={e.entry.data.lang}>
+              {title(e)}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+</Base>

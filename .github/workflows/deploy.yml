@@ -1,0 +1,70 @@
+# Build and publish thecurious.online to GitHub Pages on every push to main.
+#
+# Two jobs:
+#   1. photos  – shrinks and strips any photo that arrived unoptimised (phone uploads via
+#                Pages CMS), copies GPS into the entry, commits the result back to main.
+#                A commit made with GITHUB_TOKEN does not re-trigger this workflow, so
+#                there is no loop; the build job below checks out that same commit.
+#   2. deploy  – astro build → GitHub Pages.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  photos:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run photos:optimize
+      - name: Commit optimised photos
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/media/photos src/content/photos
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "photos: optimise and strip metadata"
+            git push
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: photos
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.photos.outputs.sha }}
+      - name: Build
+        uses: withastro/action@v3
+        with:
+          node-version: 22
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,42 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../../layouts/Base.astro';
+import { allEntries, permalink, isPhoto } from '../../lib/entries';
+import { resolvePhoto } from '../../lib/media';
+import { SITE } from '../../site';
+
+const photos = (await allEntries()).filter(isPhoto);
+const strip = photos.slice(0, SITE.stripSize);
+const withMeta = photos.map((p) => ({ p, meta: resolvePhoto(p.entry.data.image) })).filter((x) => x.meta);
+---
+
+<Base title="Photos" section="photos" description="Photographs with their places.">
+  <h1 class="page-title">Photos</h1>
+  <p class="page-intro">
+    {photos.length} so far. Each one knows where it was taken; see them all <a href="/map">on the map</a>.
+  </p>
+
+  {strip.length > 1 && (
+    <div class="strip" aria-label="Latest photos">
+      {withMeta.slice(0, SITE.stripSize).map(({ p, meta }) => (
+        <a href={permalink(p)} title={p.entry.data.place}>
+          <Image
+            src={meta!}
+            alt={p.entry.data.alt ?? p.entry.data.place ?? ''}
+            height={480}
+            format="webp"
+            quality={75}
+          />
+        </a>
+      ))}
+    </div>
+  )}
+
+  <div class="grid">
+    {withMeta.map(({ p, meta }) => (
+      <a href={permalink(p)} title={p.entry.data.place}>
+        <Image src={meta!} alt={p.entry.data.alt ?? p.entry.data.place ?? ''} width={600} format="webp" quality={75} />
+      </a>
+    ))}
+  </div>
+</Base>

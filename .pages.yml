@@ -1,0 +1,193 @@
+# Pages CMS (app.pagescms.org) — edit this site from a browser or phone.
+# Sign in with GitHub, open zsmire/thecurious.online, and these four collections appear.
+# Every save is a commit to main, which triggers the deploy.
+
+media:
+  input: src/media/photos
+  output: /media/photos
+  categories: [image]
+  rename: safe
+
+components:
+  date:
+    name: date
+    label: Date
+    type: date
+    required: true
+    options:
+      time: true
+      format: "yyyy-MM-dd'T'HH:mm"
+  lang:
+    name: lang
+    label: Language
+    type: select
+    default: en
+    description: Leave English; pick Română only for an entry written in Romanian.
+    options:
+      values:
+        - name: en
+          label: English
+        - name: ro
+          label: Română
+  tags:
+    name: tags
+    label: Tags
+    type: string
+    list: true
+    description: one word each, lowercase, no #
+  draft:
+    name: draft
+    label: Draft
+    type: boolean
+    default: false
+
+content:
+  - name: notes
+    label: Notes
+    type: collection
+    path: src/content/notes
+    filename: "{year}-{month}-{day}-{hour}{minute}.md"
+    view:
+      fields: [date, lang, tags]
+      primary: date
+      sort: [date]
+      default:
+        sort: date
+        order: desc
+    fields:
+      - component: date
+      - component: lang
+      - component: tags
+      - component: draft
+      - name: body
+        label: Note
+        type: rich-text
+        options:
+          format: markdown
+          media: false
+
+  - name: links
+    label: Links
+    type: collection
+    path: src/content/links
+    filename: "{year}-{month}-{day}-{title}.md"
+    view:
+      fields: [title, date, lang]
+      primary: title
+      sort: [date, title]
+      default:
+        sort: date
+        order: desc
+    fields:
+      - name: title
+        label: Title
+        type: string
+        required: true
+      - name: url
+        label: URL
+        type: string
+        required: true
+        pattern:
+          regex: "^https?://"
+          message: Must start with http:// or https://
+      - component: date
+      - component: lang
+      - component: tags
+      - component: draft
+      - name: body
+        label: Why it is worth the click
+        type: rich-text
+        options:
+          format: markdown
+          media: false
+
+  - name: photos
+    label: Photos
+    type: collection
+    path: src/content/photos
+    filename: "{year}-{month}-{day}-{place}.md"
+    view:
+      fields: [image, place, date, lang]
+      primary: place
+      sort: [date]
+      default:
+        sort: date
+        order: desc
+    fields:
+      - name: image
+        label: Photo
+        type: image
+        required: true
+        description: Upload straight from the phone. It is resized and its GPS stripped during deploy.
+      - name: place
+        label: Place
+        type: string
+        description: e.g. "Lipscani, Bucharest". Filled in automatically from GPS if left empty.
+      - name: alt
+        label: Alt text
+        type: string
+        description: one line describing what is in the picture, for screen readers
+      - component: date
+      - component: lang
+      - component: tags
+      - name: lat
+        label: Latitude
+        type: number
+        description: Leave empty; filled from the photo's GPS during deploy.
+      - name: lng
+        label: Longitude
+        type: number
+      - name: camera
+        label: Camera
+        type: string
+      - component: draft
+      - name: body
+        label: Caption
+        type: rich-text
+        options:
+          format: markdown
+          media: false
+
+  - name: posts
+    label: Posts
+    type: collection
+    path: src/content/posts
+    filename: "{year}-{month}-{day}-{title}.md"
+    view:
+      fields: [title, date, lang, draft]
+      primary: title
+      sort: [date, title]
+      default:
+        sort: date
+        order: desc
+    fields:
+      - name: title
+        label: Title
+        type: string
+        required: true
+      - name: description
+        label: One-line summary
+        type: text
+      - component: date
+      - component: lang
+      - component: tags
+      - component: draft
+      - name: body
+        label: Post
+        type: rich-text
+        options:
+          format: markdown
+
+  - name: site
+    label: Site settings
+    type: file
+    path: src/site.ts
+    format: code
+
+settings:
+  commit:
+    templates:
+      create: "content: add {filename}"
+      update: "content: update {filename}"
+      delete: "content: remove {filename}"
+      rename: "content: rename {oldFilename} → {newFilename}"

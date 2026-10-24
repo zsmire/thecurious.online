@@ -1,0 +1,94 @@
+---
+import { getImage } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import { allEntries, permalink, isPhoto } from '../lib/entries';
+import { resolvePhoto } from '../lib/media';
+import { dayKey } from '../lib/dates';
+
+const photos = (await allEntries()).filter(isPhoto).filter((e) => e.entry.data.lat != null && e.entry.data.lng != null);
+
+const pins = await Promise.all(
+  photos.map(async (p) => {
+    const meta = resolvePhoto(p.entry.data.image);
+    const thumb = meta ? (await getImage({ src: meta, width: 320, format: 'webp', quality: 70 })).src : null;
+    return {
+      id: p.entry.id,
+      lat: p.entry.data.lat,
+      lng: p.entry.data.lng,
+      place: p.entry.data.place ?? '',
+      date: dayKey(p.entry.data.date),
+      href: permalink(p),
+      thumb,
+    };
+  }),
+);
+---
+
+<Base title="Map" section="map" description="Every photo, where it was taken.">
+  <h1 class="page-title">Map</h1>
+  <p class="page-intro">{pins.length === 0 ? 'No geotagged photos yet.' : `${pins.length} places. Click a pin.`}</p>
+
+  <div id="map" data-pins={JSON.stringify(pins)}></div>
+
+  <script>
+    import L from 'leaflet';
+    import 'leaflet/dist/leaflet.css';
+
+    type Pin = {
+      id: string;
+      lat: number;
+      lng: number;
+      place: string;
+      date: string;
+      href: string;
+      thumb: string | null;
+    };
+    function init() {
+      const el = document.getElementById('map');
+      if (!el || el.dataset.ready) return;
+      el.dataset.ready = '1';
+      const pins: Pin[] = JSON.parse(el.dataset.pins || '[]');
+      const map = L.map(el, { scrollWheelZoom: false });
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(map);
+
+      const icon = L.divIcon({
+        className: 'pin',
+        html: '<span style="display:block;width:14px;height:14px;border-radius:50%;background:#e2a100;border:2px solid #142247;box-shadow:0 1px 4px rgba(0,0,0,.4)"></span>',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+      });
+
+      const markers: Record<string, L.Marker> = {};
+      const bounds: [number, number][] = [];
+      pins.forEach((p) => {
+        const m = L.marker([p.lat, p.lng], { icon }).addTo(map);
+        m.bindPopup(
+          (p.thumb ? '<a href="' + p.href + '"><img src="' + p.thumb + '" alt=""></a>' : '') +
+            '<strong>' +
+            p.place +
+            '</strong><br>' +
+            p.date +
+            ' — <a href="' +
+            p.href +
+            '">open</a>',
+        );
+        markers[p.id] = m;
+        bounds.push([p.lat, p.lng]);
+      });
+
+      if (bounds.length) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+      else map.setView([44.4268, 26.1025], 11); // Bucharest, until the first photo
+
+      const target = location.hash.slice(1);
+      if (target && markers[target]) {
+        map.setView(markers[target].getLatLng(), 15);
+        markers[target].openPopup();
+      }
+    }
+    init();
+    document.addEventListener('astro:page-load', init);
+  </script>
+</Base>

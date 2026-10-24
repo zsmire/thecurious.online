@@ -1,0 +1,102 @@
+---
+import { render } from 'astro:content';
+import { Image } from 'astro:assets';
+import { permalink, hostname, type Entry } from '../lib/entries';
+import { resolvePhoto, missingPhotoMessage } from '../lib/media';
+import { fmtClock } from '../lib/dates';
+
+interface Props {
+  item: Entry;
+  /** in the stream, photos are shown smaller than on their own page */
+  context?: 'stream' | 'single';
+}
+const { item, context = 'stream' } = Astro.props;
+const { kind, entry } = item;
+const { data } = entry;
+const href = permalink(item);
+const time = data.date.toISOString();
+const clock = fmtClock.format(data.date);
+
+const { Content } = await render(entry);
+
+const photo = kind === 'photo' ? resolvePhoto(entry.data.image) : undefined;
+if (kind === 'photo' && !photo) throw new Error(missingPhotoMessage(entry.data.image));
+---
+
+<article class:list={['entry', kind]} data-lang={data.lang} lang={data.lang} id={entry.id}>
+  <div class="entry-body">
+    {kind === 'note' && (
+      <div class="note-text">
+        <Content />
+      </div>
+    )}
+
+    {kind === 'link' && (
+      <div>
+        <a class="link-title" href={entry.data.url} rel="noopener">
+          {entry.data.title}
+        </a>
+        <span class="link-host">{hostname(entry.data.url)}</span>
+        {entry.body?.trim() && (
+          <div class="link-why">
+            <Content />
+          </div>
+        )}
+      </div>
+    )}
+
+    {kind === 'photo' && photo && (
+      <figure>
+        {context === 'stream' ? (
+          <a href={href} class="photo-frame" transition:name={`photo-${entry.id}`}>
+            <Image
+              src={photo}
+              alt={entry.data.alt ?? entry.data.place ?? ''}
+              widths={[480, 800, 1200]}
+              sizes="(max-width: 40rem) 92vw, 38rem"
+              format="webp"
+              quality={78}
+            />
+          </a>
+        ) : (
+          <div class="photo-frame" transition:name={`photo-${entry.id}`}>
+            <Image
+              src={photo}
+              alt={entry.data.alt ?? entry.data.place ?? ''}
+              widths={[800, 1200, 1800, 2400]}
+              sizes="(max-width: 40rem) 92vw, 38rem"
+              format="webp"
+              quality={82}
+            />
+          </div>
+        )}
+        <figcaption>
+          {entry.body?.trim() && <Content />}
+          {entry.data.place && (
+            <a class="place" href={entry.data.lat != null ? `/map#${entry.id}` : '/map'}>
+              {entry.data.place}
+            </a>
+          )}
+        </figcaption>
+      </figure>
+    )}
+
+    {kind === 'post' && (
+      <div>
+        <a class="post-title" href={href} transition:name={`post-${entry.id}`}>
+          {entry.data.title}
+        </a>
+        {entry.data.description && <p class="post-desc">{entry.data.description}</p>}
+      </div>
+    )}
+
+    <div class="entry-meta">
+      <a href={href}>
+        <time datetime={time}>{clock}</time>
+      </a>
+      {data.tags.map((t) => (
+        <a href={`/tags/${t}`}>#{t}</a>
+      ))}
+    </div>
+  </div>
+</article>

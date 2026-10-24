@@ -1,0 +1,25 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE } from '../site';
+---
+
+<Base title="About" section="about">
+  <div class="single">
+    <div></div>
+    <div class="single-body prose">
+      <h1 class="page-title">About</h1>
+      <p>
+        This is a stream, not a blog. One small thing most days: a note, a link worth your click, a photograph and where
+        it was taken, and now and then a longer post.
+      </p>
+      <p>
+        I'm a hands-on solution architect in Bucharest. The work side of me lives at{' '}
+        <a href={SITE.authorUrl}>maracineanu.com</a>; this is the rest.
+      </p>
+      <p>
+        Subscribe with <a href="/rss.xml">RSS</a> or <a href="/feed.json">JSON Feed</a>. Everything here is built with
+        Astro and published from <a href={SITE.repo}>a public repository</a>.
+      </p>
+    </div>
+  </div>
+</Base>

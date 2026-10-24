@@ -1,0 +1,21 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import Single from '../../components/Single.astro';
+import { allEntries, isPost } from '../../lib/entries';
+
+export const getStaticPaths = (async () => {
+  const posts = (await allEntries()).filter(isPost);
+  return posts.map((item, i) => ({
+    params: { id: item.entry.id },
+    props: { item, prev: posts[i + 1], next: posts[i - 1] },
+  }));
+}) satisfies GetStaticPaths;
+
+const { item, prev, next } = Astro.props;
+const { Content } = await render(item.entry);
+---
+
+<Single item={item} prev={prev} next={next}>
+  <Content />
+</Single>

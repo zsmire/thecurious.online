@@ -1,0 +1,25 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../../layouts/Base.astro';
+import Stream from '../../components/Stream.astro';
+import { allEntries, allTags } from '../../lib/entries';
+
+export const getStaticPaths = (async () => {
+  const entries = await allEntries();
+  return allTags(entries).map(({ tag }) => ({
+    params: { tag },
+    props: { entries: entries.filter((e) => e.entry.data.tags.includes(tag)) },
+  }));
+}) satisfies GetStaticPaths;
+
+const { tag } = Astro.params;
+const { entries } = Astro.props;
+---
+
+<Base title={`#${tag}`} section="archive">
+  <h1 class="page-title">#{tag}</h1>
+  <p class="page-intro">
+    {entries.length} {entries.length === 1 ? 'entry' : 'entries'}.
+  </p>
+  <Stream entries={entries} />
+</Base>

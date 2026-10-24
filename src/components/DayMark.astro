@@ -1,0 +1,25 @@
+---
+import { dayKey, dayNumber, fmtWeekday, fmtMonthShort, fmtYear } from '../lib/dates';
+
+interface Props {
+  date: Date;
+  /** link the numeral to the archive month */
+  link?: boolean;
+}
+const { date, link = true } = Astro.props;
+const key = dayKey(date);
+const Tag = link ? 'a' : 'span';
+---
+
+<div class="day-mark">
+  <Tag href={link ? `/archive#${key.slice(0, 7)}` : undefined}>
+    <time datetime={key}>
+      <span class="num">{Number(dayNumber(date))}</span>
+      <span class="rest">
+        {fmtWeekday.format(date)}
+        <br />
+        {fmtMonthShort.format(date)} {fmtYear.format(date)}
+      </span>
+    </time>
+  </Tag>
+</div>

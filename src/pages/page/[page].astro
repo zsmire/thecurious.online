@@ -1,0 +1,23 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../../layouts/Base.astro';
+import Stream from '../../components/Stream.astro';
+import { allEntries } from '../../lib/entries';
+import { SITE } from '../../site';
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const entries = await allEntries();
+  return paginate(entries, { pageSize: SITE.pageSize });
+}) satisfies GetStaticPaths;
+
+const { page } = Astro.props;
+if (page.currentPage === 1) return Astro.redirect('/');
+---
+
+<Base section="stream" title={`Page ${page.currentPage}`}>
+  <Stream entries={page.data} />
+  <nav class="pager" aria-label="Pages">
+    <a href={page.currentPage === 2 ? '/' : page.url.prev}>Later</a>
+    {page.url.next ? <a href={page.url.next}>Earlier</a> : <span />}
+  </nav>
+</Base>

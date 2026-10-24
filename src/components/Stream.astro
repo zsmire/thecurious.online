@@ -1,0 +1,29 @@
+---
+import { groupByDay, type Entry as EntryT } from '../lib/entries';
+import DayMark from './DayMark.astro';
+import Entry from './Entry.astro';
+
+interface Props {
+  entries: EntryT[];
+}
+const { entries } = Astro.props;
+const days = groupByDay(entries);
+---
+
+<div class="stream">
+  {days.map((d) => (
+    <section class="day" id={`d-${d.key}`}>
+      <DayMark date={d.day} />
+      <div class="day-entries">
+        {d.entries.map((item) => (
+          <Entry item={item} />
+        ))}
+      </div>
+    </section>
+  ))}
+  {entries.length === 0 && (
+    <p class="page-intro">
+      Nothing here yet. The first entry is one command away: <code>npm run note "hello"</code>.
+    </p>
+  )}
+</div>
